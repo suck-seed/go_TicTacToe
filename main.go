@@ -153,7 +153,30 @@ func MakeMove(w http.ResponseWriter, r *http.Request, id string) {
 	// place the move currentplayer ko, update current player
 	game.Board[move.Row][move.Col] = game.CurrentPlayer
 
-	// update current player
+	// check if Win or Draw
+
+}
+
+func checkWin(board [3][3]string, player string) {
+
+}
+
+func checkDraw(board [3][3]string) bool {
+
+	n := 3
+
+	for i := range n {
+		for j := range n {
+			if board[i][j] == "" {
+
+				//  means not draw
+				return false
+			}
+		}
+	}
+
+	//  means draw as no empty "" in board
+	return true
 
 }
 
