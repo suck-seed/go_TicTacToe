@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Tic-Tac-Toe</title>
+        <style>
+            body {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                font-family: Arial, sans-serif;
+                margin: 20px;
+            }
+
+            .board {
+                display: grid;
+                grid-template-columns: repeat(3, 100px);
+                grid-template-rows: repeat(3, 100px);
+                gap: 5px;
+                margin-bottom: 15px;
+            }
+
+            .cell {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                font-size: 2rem;
+                background: #f0f0f0;
+                cursor: pointer;
+                user-select: none;
+            }
+
+            .cell.disabled {
+                cursor: default;
+            }
+
+            #info {
+                margin-bottom: 10px;
+                font-size: 1.2rem;
+            }
+
+            button {
+                padding: 8px 12px;
+                font-size: 1rem;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Tic-Tac-Toe</h1>
+        <div id="info">Loading...</div>
+        <div class="board" id="board"></div>
+        <button id="newGame">New Game</button>
+
+        <script>
+            let gameId;
+            let status;
+
+            async function createGame() {
+                const res = await fetch("/game", { method: "POST" });
+                const game = await res.json();
+                gameId = game.id;
+                status = game.status;
+                renderBoard(game);
+            }
+
+            async function fetchGame() {
+                const res = await fetch(`/game/${gameId}`);
+                const game = await res.json();
+                status = game.status;
+                renderBoard(game);
+            }
+
+            async function makeMove(row, col) {
+                const res = await fetch(`/game/${gameId}/move`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ row, col }),
+                });
+                if (!res.ok) {
+                    const err = await res.text();
+                    alert(err);
+                    return;
+                }
+                const game = await res.json();
+                status = game.status;
+                renderBoard(game);
+            }
+
+            function renderBoard(game) {
+                const boardEl = document.getElementById("board");
+
+                // clear board every game
+                boardEl.innerHTML = "";
+
+                // go over all the rows of  Board         [3][3]string `json:"board"`
+                game.board.forEach((rowArr, r) => {
+                    // go over each columns
+                    rowArr.forEach((cell, c) => {
+                        // create a div, give classname to access later
+                        const cellEl = document.createElement("div");
+                        cellEl.className = "cell";
+
+                        // if cell doesnt exist || game status not playing, disable cell
+                        if (cell || game.status !== "playing")
+                            cellEl.classList.add("disabled");
+                        cellEl.textContent = cell;
+
+                        // add click event on each cell
+                        cellEl.addEventListener("click", () => {
+                            // if being played, the make Move on click
+                            if (!cell && game.status === "playing") {
+                                makeMove(r, c);
+                            }
+                        });
+
+                        // add every cell to board Element
+                        boardEl.appendChild(cellEl);
+                    });
+                });
+
+                const info = document.getElementById("info");
+                if (game.status === "playing") {
+                    info.textContent = `Current: ${game.currentPlayer}`;
+                } else if (game.status === "won") {
+                    info.textContent = `Winner: ${game.winner}`;
+                } else if (game.status === "draw") {
+                    info.textContent = `Draw!`;
+                }
+            }
+
+            document.getElementById("newGame").addEventListener("click", () => {
+                createGame();
+            });
+
+            // initialize
+            window.onload = createGame;
+        </script>
+    </body>
+</html>

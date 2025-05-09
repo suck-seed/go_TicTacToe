@@ -45,6 +45,8 @@ func createNewGame(w http.ResponseWriter, r *http.Request) {
 
 	}
 
+	fmt.Print("Error here")
+
 	id := generateID()
 
 	// create a game now
@@ -52,7 +54,7 @@ func createNewGame(w http.ResponseWriter, r *http.Request) {
 		ID:            id,
 		Board:         [3][3]string{},
 		CurrentPlayer: "X",
-		Status:        "Playing",
+		Status:        "playing",
 	}
 
 	// lock the mutex to hold other operation of games
@@ -68,7 +70,8 @@ func createNewGame(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-	if err := json.NewEncoder(w).Encode(game); err != nil {
+	err := json.NewEncoder(w).Encode(game)
+	if err != nil {
 		return
 	}
 
@@ -91,7 +94,8 @@ func GetGame(w http.ResponseWriter, r *http.Request, id string) {
 	// setting content type as json
 	w.Header().Set("Content-Type", "application/json")
 
-	if err := json.NewEncoder(w).Encode(game); err != nil {
+	err := json.NewEncoder(w).Encode(game)
+	if err != nil {
 		return
 	}
 
@@ -154,11 +158,11 @@ func MakeMove(w http.ResponseWriter, r *http.Request, id string) {
 
 	// check if Win or Draw
 	if checkWin(game.Board, game.CurrentPlayer) {
-		game.Status = "Won"
+		game.Status = "won"
 		game.Winner = game.CurrentPlayer
 
 	} else if checkDraw(game.Board) {
-		game.Status = "Draw"
+		game.Status = "draw"
 
 	} else {
 		// make the move
@@ -182,13 +186,11 @@ func MakeMove(w http.ResponseWriter, r *http.Request, id string) {
 
 func checkWin(board [3][3]string, player string) bool {
 
-	n := 4
-
-	for i := range n {
-		if board[0][i] == player && board[1][i] == player && board[2][i] == player {
+	for i := 0; i < 3; i++ {
+		if board[i][0] == player && board[i][1] == player && board[i][2] == player {
 			return true
 		}
-		if board[i][0] == player && board[i][1] == player && board[i][2] == player {
+		if board[0][i] == player && board[1][i] == player && board[2][i] == player {
 			return true
 		}
 	}
@@ -208,19 +210,15 @@ func checkWin(board [3][3]string, player string) bool {
 
 func checkDraw(board [3][3]string) bool {
 
-	n := 3
-
-	for i := range n {
-		for j := range n {
+	// check if any empty position is left in board
+	for i := 0; i < 3; i++ {
+		for j := 0; j < 3; j++ {
 			if board[i][j] == "" {
-
-				//  means not draw
 				return false
 			}
 		}
 	}
 
-	//  means draw as no empty "" in board
 	return true
 
 }
@@ -260,10 +258,10 @@ func UrlHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 
-	PORT := ":8080"
-
 	// create a mux to handle everything
 	mux := http.NewServeMux()
+
+	mux.Handle("/", http.FileServer(http.Dir(".")))
 
 	// handle /game
 	mux.HandleFunc("/game", createNewGame)
@@ -271,10 +269,8 @@ func main() {
 	// handle anything aru
 	mux.HandleFunc("/game/", UrlHandler)
 
-	// add aru static files to be accessable
-	mux.Handle("/", http.FileServer(http.Dir(".")))
-
-	if err := http.ListenAndServe(PORT, mux); err != nil {
+	err := http.ListenAndServe(":8080", mux)
+	if err != nil {
 		fmt.Printf("Error : %s", err)
 		return
 	}
