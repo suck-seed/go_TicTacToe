@@ -147,18 +147,63 @@ func MakeMove(w http.ResponseWriter, r *http.Request, id string) {
 	if game.Board[move.Row][move.Col] != "" {
 		http.Error(w, "Position already took", http.StatusBadRequest)
 		return
-
 	}
 
 	// place the move currentplayer ko, update current player
 	game.Board[move.Row][move.Col] = game.CurrentPlayer
 
 	// check if Win or Draw
+	if checkWin(game.Board, game.CurrentPlayer) {
+		game.Status = "Won"
+		game.Winner = game.CurrentPlayer
+
+	} else if checkDraw(game.Board) {
+		game.Status = "Draw"
+
+	} else {
+		// make the move
+		if game.CurrentPlayer == "X" {
+			game.CurrentPlayer = "O"
+		} else {
+			game.CurrentPlayer = "X"
+		}
+
+	}
+
+	// return json
+
+	w.Header().Set("Content-Type", "application/json")
+
+	if err := json.NewEncoder(w).Encode(game); err != nil {
+		return
+	}
 
 }
 
-func checkWin(board [3][3]string, player string) {
+func checkWin(board [3][3]string, player string) bool {
 
+	n := 4
+
+	for i := range n {
+		if board[0][i] == player && board[1][i] == player && board[2][i] == player {
+			return true
+		}
+		if board[i][0] == player && board[i][1] == player && board[i][2] == player {
+			return true
+		}
+	}
+
+	// check diagnoals
+	if board[0][0] == player && board[1][1] == player && board[2][2] == player {
+		return true
+	}
+
+	// another diagnoal
+	if board[0][2] == player && board[1][1] == player && board[2][0] == player {
+		return true
+	}
+
+	return false
 }
 
 func checkDraw(board [3][3]string) bool {
